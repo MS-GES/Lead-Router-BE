@@ -290,8 +290,8 @@ async def receive_privyr_webhook(
         "recipient": client_email.strip(),
         "subject": draft.subject,
         "body": draft.body,
-        "email_status": result["status"],
-        "gmail_message_id": result["message_id"],
+       "email_status": result.get("status", "sent"),
+        "gmail_message_id": result.get("message_id"),
         "timing_seconds": {
             "gemini": round(time.perf_counter() - gemini_started, 2),
             "gmail": round(time.perf_counter() - gmail_started, 2),

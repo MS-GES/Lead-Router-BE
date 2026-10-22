@@ -1,78 +1,69 @@
 
-# app/services/gmail_sender.py
+# app/helper.py
 
 import asyncio
-import base64
+import os
+import smtplib
+import ssl
 from email.message import EmailMessage
-from pathlib import Path
 
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
+from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-TOKEN_FILE = BASE_DIR / "token.json"
-SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+load_dotenv(override=True)
 
-print("Gmail helper file:", Path(__file__).resolve())
-print("Token path:", TOKEN_FILE)
-print("Token exists:", TOKEN_FILE.exists())
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+
+
 def _send_email_sync(
     recipient: str,
     subject: str,
     body: str,
+    sender_email: str | None = None,
 ) -> dict:
-    if not TOKEN_FILE.exists():
-        raise RuntimeError(
-            "Gmail is not authorized. Run authorize_gmail.py first."
-        )
+    if not all([SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD]):
+        raise RuntimeError("SMTP configuration is missing from .env")
 
-    credentials = Credentials.from_authorized_user_file(
-        str(TOKEN_FILE), SCOPES
-    )
+    sender = sender_email or SMTP_USERNAME
 
-    if credentials.expired and credentials.refresh_token:
-        credentials.refresh(Request())
-        TOKEN_FILE.write_text(credentials.to_json(), encoding="utf-8")
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = recipient
+    msg.set_content(body)
 
-    if not credentials.valid:
-        raise RuntimeError(
-            "Gmail authorization is invalid. Reauthorize Gmail."
-        )
+    context = ssl.create_default_context()
 
-    message = EmailMessage()
-    message["To"] = recipient
-    message["Subject"] = subject
-    message.set_content(body)
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
+        server.ehlo()
 
-    encoded_message = base64.urlsafe_b64encode(
-        message.as_bytes()
-    ).decode("utf-8")
+        if SMTP_USE_TLS:
+            server.starttls(context=context)
+            server.ehlo()
 
-    service = build(
-        "gmail",
-        "v1",
-        credentials=credentials,
-        cache_discovery=False,
-    )
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(msg)
 
-    result = service.users().messages().send(
-        userId="me",
-        body={"raw": encoded_message},
-    ).execute()
-
-    return {"message_id": result["id"], "status": "sent"}
+    return {
+        "status": "sent",
+        "sender": sender,
+        "recipient": recipient,
+    }
 
 
 async def send_email(
     recipient: str,
     subject: str,
     body: str,
+    sender_email: str | None = None,
 ) -> dict:
-    # Gmail's Python client is synchronous; keep it off the event loop.
     return await asyncio.to_thread(
         _send_email_sync,
         recipient,
         subject,
         body,
+        sender_email,
     )
