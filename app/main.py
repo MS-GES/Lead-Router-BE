@@ -230,7 +230,7 @@ async def receive_privyr_webhook(
         draft = await generate_lead_email(
             client_name=client_name,
             client_notes=client_notes,
-            company_name="Your Company Name",
+            company_name="kitaab.ai",
             company_services="Describe your actual company services",
         )
 
@@ -253,49 +253,69 @@ async def receive_privyr_webhook(
     # Step 2: Send the generated email through Gmail.
     gmail_started = time.perf_counter()
 
-    try:
-        result = await send_email(
-            recipient=client_email.strip(),
-            subject=draft.subject,
-            body=draft.body,
+    it_team_email = os.getenv("IT_TEAM_EMAIL")
+
+    if not it_team_email:
+        raise HTTPException(
+            status_code=500,
+            detail="IT_TEAM_EMAIL is not configured",
         )
 
+    gmail_started = time.perf_counter()
+
+    email_body = (
+        f"{draft.body}\n\n"
+        f"--- Lead Contact Details ---\n"
+        f"Client Name: {client_name or 'Not provided'}\n"
+        f"Client Email: {client_email.strip()}\n"
+        
+    )
+
+    try:
+        result = await send_email(
+            recipient=it_team_email,
+            subject=draft.subject,
+            body=email_body,
+        )
+
+        gmail_duration = time.perf_counter() - gmail_started
+
         logger.info(
-            "Gmail sending completed | duration=%.2f seconds | status=%s",
-            time.perf_counter() - gmail_started,
+            "IT team notification sent | duration=%.2f seconds | status=%s",
+            gmail_duration,
             result.get("status"),
         )
 
     except Exception:
         logger.exception(
-            "Gmail email sending failed | duration=%.2f seconds",
+            "IT team email sending failed | duration=%.2f seconds",
             time.perf_counter() - gmail_started,
         )
 
         raise HTTPException(
             status_code=502,
-            detail="Email generated, but Gmail sending failed.",
+            detail="Email generated, but IT team notification failed.",
         )
 
-    total_duration = time.perf_counter() - request_started
 
-    logger.info(
-        "Privyr webhook completed | total_duration=%.2f seconds",
-        total_duration,
-    )
+    
+    total_duration = time.perf_counter() - request_started
 
     return {
         "success": True,
         "event_type": payload.event_type,
-        "recipient": client_email.strip(),
+        "recipient": it_team_email,
         "subject": draft.subject,
-        "body": draft.body,
-       "email_status": result.get("status", "sent"),
-        "gmail_message_id": result.get("message_id"),
+        "body": email_body,
+        "email_status": result.get("status", "sent"),
         "timing_seconds": {
-            "gemini": round(time.perf_counter() - gemini_started, 2),
-            "gmail": round(time.perf_counter() - gmail_started, 2),
+            "gemini": round(
+                time.perf_counter() - gemini_started - gmail_duration,
+                2,
+            ),
+            "gmail": round(gmail_duration, 2),
             "total": round(total_duration, 2),
         },
-        "message": "Email sent through Gmail API",
+        "message": "AI-generated lead notification sent to the IT team",
     }
+
