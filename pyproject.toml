@@ -24,7 +24,7 @@ package = false
 
 [tool.poetry]
 packages = [
-    { include = "app" }
+    { include = "src" }
 ]
 
 [build-system]
