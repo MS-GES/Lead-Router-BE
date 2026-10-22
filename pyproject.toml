@@ -18,6 +18,14 @@ dependencies = [
     "google-auth-oauthlib (>=1.5.0,<2.0.0)"
 ]
 
+[tool.uv]
+package = false
+
+[tool.poetry]
+packages = [
+    { include = "app" }
+]
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
