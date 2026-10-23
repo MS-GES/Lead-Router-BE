@@ -548,7 +548,10 @@ files = [
 ]
 
 [package.dependencies]
-cryptography = {version = ">=38.0.3", markers = "python_version < \"3.14\""}
+cryptography = [
+    {version = ">=38.0.3", markers = "python_version < \"3.14\""},
+    {version = ">=41.0.5", markers = "python_version >= \"3.14\""},
+]
 pyasn1-modules = ">=0.2.1"
 requests = {version = ">=2.30.0,<3.0.0", optional = true, markers = "extra == \"requests\""}
 
@@ -1355,5 +1358,5 @@ files = [
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.12,<3.13"
-content-hash = "f171d45936cd45286383bc116081879017a72d03d83576b3c90864711e02ff40"
+python-versions = ">=3.12"
+content-hash = "6167cb811a8bace84ee0ec238dab6abcdaf0cf617d6a93aaf995271ce4bdc934"
