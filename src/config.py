@@ -31,4 +31,8 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
 
 
+    liquid_api_key: str
+    liquid_model: str = "d1"
+
+
 settings = Settings()

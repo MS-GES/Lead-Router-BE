@@ -5,14 +5,14 @@ from google import genai
 from google.genai.errors import ServerError
 
 from src.config import settings
-from src.mail.model import EmailDraft
+from src.mail.models import EmailDraft
 from src.mail.helper import send_email
 
 logger = logging.getLogger(__name__)
 
 gemini_client = genai.Client(api_key=settings.gemini_api_key)
 
-
+LIQUID_AI_URL = "https://api.liquid.ai/decisions/v1/systemone"
 async def generate_lead_email(
     client_name: str | None,
     client_notes: str | None,
@@ -145,3 +145,4 @@ async def send_lead_notification(
         "result": result,
         "email_body": email_body,
     }
+

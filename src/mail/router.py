@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.security import VerifyToken
 from src.config import settings
-from src.mail.model import PrivyrWebhook
+from src.mail.models import PrivyrWebhook
 from src.mail.services import generate_lead_email, send_lead_notification
 
 logger = logging.getLogger(__name__)
