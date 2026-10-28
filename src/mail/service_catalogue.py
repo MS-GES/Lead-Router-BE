@@ -21,6 +21,7 @@ PORTFOLIO_CATALOGUE: dict[str, PortfolioCatalogue] = {
             "Company secretarial services",
             "Outsourced compliance",
             "MLRO services",
+            "M&A"
         ),
         unsupported_services=(
             "Payroll",

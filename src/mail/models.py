@@ -77,7 +77,6 @@ class LeadTestInput(BaseModel):
 
 class TemplateDecision(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
     scenario: Scenario
     service_fit: ServiceFit = "unknown"
     identified_service: str | None = None
@@ -113,3 +112,9 @@ ExceptionCategory = Literal[
     "none",
     "manual_review",
 ]
+
+
+class EmailContent(BaseModel):
+    subject: str
+    body: str
+    send_email: bool = True
