@@ -5,7 +5,7 @@ from typing import Literal
 import httpx
 from google import genai
 from pydantic import BaseModel, ConfigDict, Field
-from src.mail.models import LeadTestInput, TemplateDecision
+from src.mail.models import LeadTestInput, TemplateDecision,RequirementReflection,ExceptionCategory,ExceptionScreeningResult,ExceptionCategory
 from src.config import settings
 from src.mail.service_catalogue import (
     get_portfolio_catalogue,
@@ -14,25 +14,6 @@ from src.mail.service_catalogue import (
 
 logger = logging.getLogger(__name__)
 
-# --------------------------------------------------
-# Exception screening models
-# --------------------------------------------------
-
-ExceptionCategory = Literal[
-    "spam",
-    "job_seeker",
-    "existing_client",
-    "vendor",
-    "none",
-    "manual_review",
-]
-
-
-class ExceptionScreeningResult(BaseModel):
-    category: ExceptionCategory
-    reason: str = Field(
-        description="Brief explanation of the exception classification."
-    )
 # --------------------------------------------------
 # Gemini client
 # --------------------------------------------------
@@ -140,6 +121,7 @@ async def screen_lead_exception(
         )
 
     return result
+
 async def choose_template(
     lead: LeadTestInput,
 ) -> TemplateDecision:
@@ -337,13 +319,7 @@ async def choose_template(
     )
 
 
-class RequirementReflection(BaseModel):
-    reflection: str = Field(
-        description=(
-            "A concise, accurate reflection of the lead's actual "
-            "business requirement, beginning with approved wording."
-        )
-    )
+
 
 
 def validate_reflection(reflection: str | None) -> str:
@@ -497,6 +473,7 @@ valuation before negotiations with an investor."
     )
 
     return reflection
+
 
 if __name__ == "__main__":
     import asyncio

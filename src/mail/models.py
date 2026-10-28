@@ -86,7 +86,7 @@ class TemplateDecision(BaseModel):
 
 class RequirementReflection(BaseModel):
     reflection: str
-    
+
 class ExceptionScreeningResult(BaseModel):
     category: ExceptionCategory
     reason: str = Field(
@@ -100,3 +100,16 @@ class ExceptionScreeningResult(BaseModel):
         default=None,
         description="Brief evidence supporting the service identification"
     )
+
+class ExceptionScreeningResult(BaseModel):
+    category: ExceptionCategory
+    reason: str
+
+ExceptionCategory = Literal[
+    "spam",
+    "job_seeker",
+    "existing_client",
+    "vendor",
+    "none",
+    "manual_review",
+]
