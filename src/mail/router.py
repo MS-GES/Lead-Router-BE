@@ -1,25 +1,19 @@
-
 import logging
-import secrets
-from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from src.security import VerifyToken
-from src.config import settings
+
+from src.mail.helper import send_bd_team_notification
 from src.mail.models import PrivyrWebhook
-from src.mail.services import generate_lead_email, send_lead_notification
+from src.mail.services import process_privyr_lead
+from src.security import VerifyToken
 
 logger = logging.getLogger(__name__)
-security = HTTPBearer(auto_error=False)
 
 router = APIRouter()
 
 
-@router.post("/webhooks/privyr")
-async def receive_privyr_webhook(
-    payload: PrivyrWebhook,
-     _: Annotated[None, Depends(VerifyToken)],
-):
+@router.post("/webhooks/privyr", dependencies=[Depends(VerifyToken)])
+async def receive_privyr_webhook(payload: PrivyrWebhook):
     logger.info(
         "Privyr webhook received | event_type=%s",
         payload.event_type,
@@ -31,56 +25,26 @@ async def receive_privyr_webhook(
             "message": "Event received; no email sent",
         }
 
-    client = payload.client or {}
-    client_name = client.get("name")
-    client_notes = client.get("notes")
-    client_email = client.get("email")
-
-    if not isinstance(client_email, str) or not client_email.strip():
-        raise HTTPException(status_code=422, detail="Client email is missing")
-
-    if not isinstance(client_notes, str) or not client_notes.strip():
-        raise HTTPException(status_code=422, detail="Client notes are missing")
-
-    if not isinstance(client_name, str):
-        client_name = None
-
     try:
-        draft = await generate_lead_email(
-            client_name=client_name,
-            client_notes=client_notes,
-        )
+        result = await process_privyr_lead(payload)
+        return result
     except Exception as exc:
-        logger.exception("Gemini email draft generation failed")
+        logger.exception("Error processing Privyr lead in webhook router")
+        try:
+            client = payload.client
+            await send_bd_team_notification(
+                case="processing_error",
+                lead_name=client.name if client else None,
+                lead_email=client.email if client else None,
+                lead_phone=client.phone_number if client else None,
+                lead_notes=client.notes if client else None,
+                lead_source=client.source if client else None,
+                reason=f"Router error: {exc}",
+            )
+        except Exception:
+            logger.exception("Failed to send emergency BD team notification from router")
+
         raise HTTPException(
-            status_code=502,
-            detail="Email draft generation failed. Check server logs.",
+            status_code=500,
+            detail="Error processing Privyr lead. BD team has been alerted.",
         ) from exc
-
-    try:
-        notification = await send_lead_notification(
-            recipient=settings.it_team_email,
-            draft=draft,
-            client_name=client_name,
-            client_email=client_email,
-        )
-        result = notification["result"]
-    except Exception as exc:
-        logger.exception("IT team email sending failed")
-        raise HTTPException(
-            status_code=502,
-            detail="Email generated, but IT team notification failed.",
-        ) from exc
-
-    logger.info("Privyr webhook processed successfully")
-
-    return {
-        "success": True,
-        "event_type": payload.event_type,
-        "recipient": settings.it_team_email,
-        "subject": draft.subject,
-        "body": notification["email_body"],
-        "email_status": result.get("status", "sent"),
-        "message": "AI-generated lead notification sent to the IT team",
-    }
-

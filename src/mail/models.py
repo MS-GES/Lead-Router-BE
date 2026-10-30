@@ -23,6 +23,7 @@ Scenario = Literal[
     "spam",
     "vendor",
     "manual_review",
+    "processing_error",
 ]
 
 ServiceFit = Literal[
@@ -47,9 +48,14 @@ class PrivyrClient(BaseModel):
     name: str | None = None
     email: str | None = None
     phone_number: str | None = None
+    company: str | None = None
     notes: str | None = None
     created_at: float | None = None
     source: str | None = None
+    portfolio: str | None = None
+    selected_service: str | None = None
+    custom_fields: list[dict[str, Any]] | dict[str, Any] | None = None
+    qualification: dict[str, Any] | None = None
 
 
 class PrivyrWebhook(BaseModel):
@@ -58,10 +64,16 @@ class PrivyrWebhook(BaseModel):
     event_type: str
     client: PrivyrClient | None = None
     activity: dict[str, Any] | None = None
+    portfolio: str | None = None
+    brand: str | None = None
+    company: str | None = None
+    service: str | None = None
+    selected_service: str | None = None
+    qualification: dict[str, Any] | None = None
 
 
-class LeadTestInput(BaseModel):
-    """Manual input for testing the workflow."""
+class LeadInput(BaseModel):
+    """Internal model for normalized lead data."""
 
     portfolio: Portfolio
     name: str | None = None
@@ -69,10 +81,15 @@ class LeadTestInput(BaseModel):
     phone: str | None = None
     source: str | None = None
     selected_service: str | None = None
+    created_at: float | None = None
     message: str | None = None
     qualification: dict[str, Any] = Field(
         default_factory=dict
     )
+
+
+# Alias for backwards compatibility
+LeadTestInput = LeadInput
 
 
 class TemplateDecision(BaseModel):
@@ -91,27 +108,6 @@ class ExceptionScreeningResult(BaseModel):
     reason: str = Field(
         description="Brief reason based on the lead's information"
     )
-    identified_service: str | None = Field(
-        default=None,
-        description="Service the lead appears to need, if identifiable"
-    )
-    service_reason: str | None = Field(
-        default=None,
-        description="Brief evidence supporting the service identification"
-    )
-
-class ExceptionScreeningResult(BaseModel):
-    category: ExceptionCategory
-    reason: str
-
-ExceptionCategory = Literal[
-    "spam",
-    "job_seeker",
-    "existing_client",
-    "vendor",
-    "none",
-    "manual_review",
-]
 
 
 class EmailContent(BaseModel):

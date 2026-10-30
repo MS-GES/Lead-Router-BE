@@ -13,24 +13,17 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
-
     gemini_api_key: str
     gemini_model: str = "gemini-3.8-flash"
-    gemini_fallback_model: str | None = None
-
     privyr_webhook_secret: str
     it_team_email: str
-    company_name: str = "kitaab.ai"
-    company_services: str = "Company incorporation and corporate advisory services"
-    
+    bd_team_email: str | None = None
     # SMTP configuration
     smtp_server: str
     smtp_port: int = 587
     smtp_username: str
     smtp_password: str
     smtp_use_tls: bool = True
-
-
     liquid_api_key: str
     liquid_model: str = "d1"
 

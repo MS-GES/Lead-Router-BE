@@ -2,6 +2,7 @@
 import logging
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from src.mail.router import router
 
@@ -19,7 +20,13 @@ app = FastAPI(
 app.include_router(router)
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
+async def redirect_to_docs():
+    """Redirect root/base URL directly to interactive API documentation."""
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/health")
 async def health_check():
     return {
         "status": "ok",
